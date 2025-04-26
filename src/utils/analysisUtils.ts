@@ -127,7 +127,7 @@ export const generateAnalysisResults = (type: string, fileName: string, fileData
 };
 
 // Function to generate a downloadable report
-export const generateDownloadableReport = (results: any): string => {
+export const generateDownloadableReport = (results: ReturnType<typeof generateAnalysisResults>): string => {
   const date = new Date(results.analysisDate).toLocaleString();
   const mediaType = results.mediaType.charAt(0).toUpperCase() + results.mediaType.slice(1);
   

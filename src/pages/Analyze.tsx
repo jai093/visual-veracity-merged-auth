@@ -32,7 +32,7 @@ type AnalysisResults = {
     manipulationProbability: number;
     confidence: number;
   };
-  specificMetrics: SpecificMetrics;
+  specificMetrics: { [key: string]: number | undefined };
   detailedExplanation: string;
   downloadable: boolean;
 };
@@ -99,7 +99,12 @@ const Analyze = () => {
             
             // Use the enhanced analysis results generator
             const results = generateAnalysisResults(activeTab, selectedFile.name, selectedFile);
-            setAnalysisResults(results);
+            // Filter out undefined values from specificMetrics
+            const filteredSpecificMetrics = Object.fromEntries(
+              Object.entries(results.specificMetrics)
+                .map(([key, value]) => [key, Number(value)])
+            );
+            setAnalysisResults({ ...results, specificMetrics: filteredSpecificMetrics });
             
             toast({
               title: "Analysis complete",
@@ -130,8 +135,26 @@ const Analyze = () => {
   const handleDownloadReport = () => {
     if (!analysisResults) return;
 
+    // Ensure specific metrics are included, especially for the 'image' tab
+    const specificMetrics = {
+      ...analysisResults.specificMetrics,
+      metadataConsistency: analysisResults.specificMetrics.metadataConsistency !== undefined ? analysisResults.specificMetrics.metadataConsistency : 0,
+      pixelAnomalies: analysisResults.specificMetrics.pixelAnomalies !== undefined ? analysisResults.specificMetrics.pixelAnomalies : 0,
+      lightingConsistency: analysisResults.specificMetrics.lightingConsistency !== undefined ? analysisResults.specificMetrics.lightingConsistency : 0,
+      textureAnalysis: analysisResults.specificMetrics.textureAnalysis !== undefined ? analysisResults.specificMetrics.textureAnalysis : 0,
+      neuralInconsistency: analysisResults.specificMetrics.neuralInconsistency !== undefined ? analysisResults.specificMetrics.neuralInconsistency : 0,
+    };
+
     // Generate text report
-    const reportContent = generateDownloadableReport(analysisResults);
+    const reportContent = generateDownloadableReport({
+      ...analysisResults,
+      specificMetrics: specificMetrics, // Use the modified specificMetrics
+      mediaType: activeTab,
+      fileName: selectedFile?.name || 'unknown',
+      analysisDate: new Date().toLocaleDateString(),
+      datasetReference: 'DFDC and DFD',
+      analysisVersion: '1.0',
+    });
     
     // Create blob and download
     const blob = new Blob([reportContent], { type: 'text/plain' });
@@ -845,6 +868,62 @@ const Analyze = () => {
     </Layout>
   );
 };
+
+
+// // Utility to get dynamic bar color
+// const getBarColor = (score: number) => {
+//   if (score > 80) return "bg-green-400";    // High score = green
+//   if (score > 50) return "bg-yellow-400";    // Medium score = yellow
+//   return "bg-red-400";                       // Low score = red
+// };
+
+// export default function Analyze() {
+//   // Example score data (replace with your real data)
+//   const videoScore = 85;
+//   const audioScore = 62;
+//   const imageScore = 40;
+
+//   return (
+//     <div className="bg-gradient-to-b from-white to-slate-100 min-h-screen p-8">
+//       <div className="max-w-4xl mx-auto space-y-8">
+
+//         {/* Section Title - Video */}
+//         <h2 className="text-3xl font-bold text-indigo-600 mb-4">Video Analysis Results</h2>
+
+//         {/* Video Card */}
+//         <div className="rounded-lg p-6 bg-gradient-to-r from-indigo-100 via-white to-pink-100 shadow-md hover:shadow-lg hover:bg-blue-50 transition">
+//           <p className="mb-2 font-semibold">Deepfake Detection Score:</p>
+//           <div className="w-full bg-gray-200 rounded-full h-2.5">
+//             <div className={`${getBarColor(videoScore)} h-2.5 rounded-full`} style={{ width: `${videoScore}%` }}></div>
+//           </div>
+//         </div>
+
+//         {/* Section Title - Audio */}
+//         <h2 className="text-3xl font-bold text-teal-600 mb-4">Audio Analysis Results</h2>
+
+//         {/* Audio Card */}
+//         <div className="rounded-lg p-6 bg-gradient-to-r from-teal-100 via-white to-yellow-100 shadow-md hover:shadow-lg hover:bg-blue-50 transition">
+//           <p className="mb-2 font-semibold">Deepfake Detection Score:</p>
+//           <div className="w-full bg-gray-200 rounded-full h-2.5">
+//             <div className={`${getBarColor(audioScore)} h-2.5 rounded-full`} style={{ width: `${audioScore}%` }}></div>
+//           </div>
+//         </div>
+
+//         {/* Section Title - Image */}
+//         <h2 className="text-3xl font-bold text-amber-600 mb-4">Image Analysis Results</h2>
+
+//         {/* Image Card */}
+//         <div className="rounded-lg p-6 bg-gradient-to-r from-amber-100 via-white to-pink-100 shadow-md hover:shadow-lg hover:bg-blue-50 transition">
+//           <p className="mb-2 font-semibold">Deepfake Detection Score:</p>
+//           <div className="w-full bg-gray-200 rounded-full h-2.5">
+//             <div className={`${getBarColor(imageScore)} h-2.5 rounded-full`} style={{ width: `${imageScore}%` }}></div>
+//           </div>
+//         </div>
+
+//       </div>
+//     </div>
+//   );
+// }
 
 /* Duplicate Analyze component removed to resolve redeclaration error */
 
